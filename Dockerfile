@@ -21,14 +21,16 @@
 #   docker run -ti -e HOST_IP=$(ip route | grep -v docker | awk '{if(NF==11) print $9}') --entrypoint /bin/bash local/pl-pfdo_mgz2img
 #
 
-FROM fnndsc/ubuntu-python3:latest
-MAINTAINER fnndsc "dev@babymri.org"
+FROM python:3.9.1-slim-buster
+LABEL maintainer="Arushi Vyas <dev@babyMRI.org>"
 
 WORKDIR /usr/local/src
+
+COPY requirements.txt .
+COPY FreeSurferColorLUT.txt .
+RUN pip install -r requirements.txt
+
 COPY . .
-COPY ["FreeSurferColorLUT.txt", "/usr/src/"]
+RUN pip install .
 
-RUN pip --disable-pip-version-check install -U -r requirements.txt && pip install .
-
-WORKDIR /usr/local/bin
-CMD ["/usr/local/bin/pfdo_mgz2img", "--help"]
+CMD ["pfdo_mgz2img", "--help"]

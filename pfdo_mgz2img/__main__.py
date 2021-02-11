@@ -1,4 +1,4 @@
-from .pfdo_mgz2img import Pfdo_mgz2img
+from pfdo_mgz2img.pfdo_mgz2img import Pfdo_mgz2img
 
 
 def main():

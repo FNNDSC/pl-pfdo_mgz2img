@@ -30,7 +30,8 @@ Synopsis
 
     python pfdo_mgz2img.py                  \
             [-i|--inputFile <inputFile>]                                \
-            [--filterExpression <someFilter>]                           \
+            [--fileFilter <filter1,filter2,...>]                        \
+            [--dirFilter <filter1,filter2,...>]                         \
             [--analyzeFileIndex <someIndex>]                            \
             [--outputLeafDir <outputLeafDirFormat>]                     \
             [-o|--outputFileStem]<outputFileStem>]                      \
@@ -63,9 +64,30 @@ Arguments
         specified, then do not perform a directory walk, but convert only
         this file.
 
-        [-f|--filterExpression <someFilter>]
-        An optional string to filter the files of interest from the
-        <inputDir> tree.
+        [--fileFilter <someFilter1,someFilter2,...>]
+        An optional comma-delimated string to filter out files of interest
+        from the <inputDir> tree. Each token in the expression is applied in
+        turn over the space of files in a directory location, and only files
+        that contain this token string in their filename are preserved.
+
+        [--dirFilter <someFilter1,someFilter2,...>]
+        Similar to the `fileFilter` but applied over the space of leaf node
+        in directory paths. A directory must contain at least one file
+        to be considered.
+
+        If a directory leaf node contains a string that corresponds to any of
+        the filter tokens, a special "hit" is recorded in the file hit list,
+        "%d-<leafnode>". For example, a directory of
+
+                            /some/dir/in/the/inputspace/here1234
+
+        with a `dirFilter` of `1234` will create a "special" hit entry of
+        "%d-here1234" to tag this directory for processing.
+
+        In addition, if a directory is filtered through, all the files in
+        that directory will be added to the filtered file list. If no files
+        are to be added, passing an explicit file filter with an "empty"
+        single string argument, i.e. `--fileFilter " "`, is advised.
 
         [--analyzeFileIndex <someIndex>]
         An optional string to control which file(s) in a specific directory
@@ -206,7 +228,7 @@ First, let's create a directory, say ``devel`` wherever you feel like it. We wil
 Now we need to fetch MGZ files.
 
 Pull MGZ data
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 - We provide a sample directory of a few ``.mgz`` volumes here. (https://github.com/FNNDSC/mgz_converter_dataset.git)
 
@@ -219,7 +241,7 @@ Pull MGZ data
 Make sure the ``mgz_converter_dataset`` directory is placed in the devel directory.
 
 Run using ``docker run``
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To run using ``docker``, be sure to assign an "input" directory to ``/incoming`` and an output directory to ``/outgoing``. *Make sure that the* ``$(pwd)/out`` *directory is world writable!*
 
@@ -249,7 +271,8 @@ Copy and modify the different commands below as needed:
         -v ${DEVEL}/:/incoming                          \
         -v ${DEVEL}/results/:/outgoing                  \
         fnndsc/pl-pfdo_med2img pfdo_med2img.py          \
-        --filterExpression aparc.a2009s+aseg.mgz        \                          \
+        --fileFilter " "                                \
+        --dirFilter 100307                              \
         --analyzeFileIndex -1                           \
         --saveImages                                    \
         --filterLabelValueList 10,15                    \
@@ -274,7 +297,8 @@ These raw mgz files do not require the "FreeSurferColorLUT.txt" to convert to im
         -v ${DEVEL}/mgz_converter_dataset/:/incoming    \
         -v ${DEVEL}/results/:/outgoing                  \
         fnndsc/pl-pfdo_mgz2img pfdo_mgz2img.py          \
-        --filterExpression brain.mgz                    \
+        --fileFilter " "                                \
+        --dirFilter 100307                              \
         --analyzeFileIndex -1                           \ 
         --saveImages                                    \
         --skipAllLabels                                 \

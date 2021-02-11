@@ -1,14 +1,12 @@
-#!/usr/bin/env python                                            
 #
 # pfdo_mgz2img ds ChRIS plugin app
 #
-# (c) 2016-2020 Fetal-Neonatal Neuroimaging & Developmental Science Center
+# (c) 2021 Fetal-Neonatal Neuroimaging & Developmental Science Center
 #                   Boston Children's Hospital
 #
 #              http://childrenshospital.org/FNNDSC/
 #                        dev@babyMRI.org
 #
-
 
 import os
 import sys
@@ -22,8 +20,8 @@ logging.disable(logging.CRITICAL)
 from chrisapp.base import ChrisApp
 from pfdo_mgz2image import pfdo_mgz2image
 
-Gstr_title = """
 
+Gstr_title = """
         __    _                             _____ _                 
        / _|  | |                           / __  (_)                
  _ __ | |_ __| | ___   _ __ ___   __ _ ____`' / /'_ _ __ ___   __ _ 
@@ -32,10 +30,10 @@ Gstr_title = """
 | .__/|_| \__,_|\___/ |_| |_| |_|\__, /___|\_____/_|_| |_| |_|\__, |
 | |               ______          __/ |                        __/ |
 |_|              |______|        |___/                        |___/ 
-
 """
 
 Gstr_synopsis = """
+
 
     NAME
 
@@ -47,7 +45,8 @@ Gstr_synopsis = """
             -I|--inputDir <inputDir>                                   \\
             -O|--outputDir <outputDir>                                 \\
             [-i|--inputFile <inputFile>]                                \\
-            [--filterExpression <someFilter>]                           \\
+            [--fileFilter <filter1,filter2,...>]                        \\
+            [--dirFilter <filter1,filter2,...>]                         \\
             [--outputLeafDir <outputLeafDirFormat>]                     \\
             [-o|--outputFileStem]<outputFileStem>]                      \\
             [-t|--outputFileType <outputFileType>]                      \\
@@ -108,9 +107,30 @@ Gstr_synopsis = """
         specified, then do not perform a directory walk, but convert only
         this file.
 
-        [-f|--filterExpression <someFilter>]
-        An optional string to filter the files of interest from the
-        <inputDir> tree.
+        [--fileFilter <someFilter1,someFilter2,...>]
+        An optional comma-delimated string to filter out files of interest
+        from the <inputDir> tree. Each token in the expression is applied in
+        turn over the space of files in a directory location, and only files
+        that contain this token string in their filename are preserved.
+
+        [--dirFilter <someFilter1,someFilter2,...>]
+        Similar to the `fileFilter` but applied over the space of leaf node
+        in directory paths. A directory must contain at least one file
+        to be considered.
+
+        If a directory leaf node contains a string that corresponds to any of
+        the filter tokens, a special "hit" is recorded in the file hit list,
+        "%d-<leafnode>". For example, a directory of
+
+                            /some/dir/in/the/inputspace/here1234
+
+        with a `dirFilter` of `1234` will create a "special" hit entry of
+        "%d-here1234" to tag this directory for processing.
+
+        In addition, if a directory is filtered through, all the files in
+        that directory will be added to the filtered file list. If no files
+        are to be added, passing an explicit file filter with an "empty"
+        single string argument, i.e. `--fileFilter " "`, is advised.
 
         [--analyzeFileIndex <someIndex>]
         An optional string to control which file(s) in a specific directory
@@ -233,25 +253,18 @@ Gstr_synopsis = """
                     - analyze
                     - write
 
-
 """
+
 
 class Pfdo_mgz2img(ChrisApp):
     """
-    An app to ....
+    An app to ...
     """
-    AUTHORS                 = 'FNNDSC <dev@babyMRI.org>'
-    SELFPATH                = '/usr/local/bin'
-    SELFEXEC                = 'pfdo_mgz2img'
-    EXECSHELL               = 'python'
-    TITLE                   = 'A ChRIS plugin app to run the Python utility: pfdo_mgz2image'
+    PACKAGE                 = __package__
+    TITLE                   = 'A ChRIS plugin app'
     CATEGORY                = ''
     TYPE                    = 'ds'
-    DESCRIPTION             = 'An app to run the Python utility: pfdo_mgz2image'
-    DOCUMENTATION           = 'http://wiki'
-    VERSION                 = importlib.metadata.version(__package__)
     ICON                    = '' # url of an icon image
-    LICENSE                 = 'Opensource (MIT)'
     MAX_NUMBER_OF_WORKERS   = 1  # Override with integer value
     MIN_NUMBER_OF_WORKERS   = 1  # Override with integer value
     MAX_CPU_LIMIT           = '' # Override with millicore value as string, e.g. '2000m'
@@ -279,16 +292,22 @@ class Pfdo_mgz2img(ChrisApp):
         Define the CLI arguments accepted by this plugin app.
         Use self.add_argument to specify a new app argument.
         """
-        
+
         self.add_argument("-i", "--inputFile",
                             help    = "input file",
                             dest    = 'inputFile',
                             type    = str,
                             optional= True,
                             default = '')
-        self.add_argument("--filterExpression",
-                            help    = "string file filter",
-                            dest    = 'filter',
+        self.add_argument("--fileFilter",
+                            help    = "a list of comma separated string filters to apply across the input file space",
+                            dest    = 'fileFilter',
+                            type    = str,
+                            optional= True,
+                            default = '')
+        self.add_argument("--dirFilter",
+                            help    = "a list of comma separated string filters to apply across the input dir space",
+                            dest    = 'dirFilter',
                             type    = str,
                             optional= True,
                             default = '')
@@ -416,7 +435,6 @@ class Pfdo_mgz2img(ChrisApp):
                             type    = str,
                             optional= True,
                             default = 'wholeVolume')
-        
 
     def run(self, options):
         """
@@ -425,7 +443,7 @@ class Pfdo_mgz2img(ChrisApp):
         print(Gstr_title)
         print('Version: %s' % self.get_version())
 
-        # pudb.set_trace()
+                # pudb.set_trace()
         if options.man or options.synopsis:
             self.show_man_page()
 
@@ -446,13 +464,9 @@ class Pfdo_mgz2img(ChrisApp):
 
         sys.exit(0)
 
+
     def show_man_page(self):
         """
         Print the app's man page.
         """
         print(Gstr_synopsis)
-
-# ENTRYPOINT
-if __name__ == "__main__":
-    app = Pfdo_mgz2img()
-    app.launch()
