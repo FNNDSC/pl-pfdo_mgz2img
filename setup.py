@@ -6,7 +6,7 @@ with open(path.join(path.dirname(path.abspath(__file__)), 'README.rst')) as f:
 
 setup(
     name             = 'pfdo_mgz2img',
-    version          = '1.0.0',
+    version          = '1.0.2',
     description      = 'An app to recursively walk down a directory tree and perform a mgz2imgslices on files in each directory. \
                         (optionally filtered by some simple expression)',
     long_description = readme,
